@@ -339,6 +339,9 @@
     <div id="invoiceTab" class="tab-content active">
         <div class="action-bar">
             <button class="btn btn-save" onclick="saveInvoiceData()">💾 រក្សាទុកទិន្នន័យ (Save)</button>
+            <button class="btn" style="background-color: #341f97;" onclick="exportDataToJSON()">📤 ទាញទិន្នន័យទុក (Backup)</button>
+            <button class="btn" style="background-color: #54a0ff;" onclick="document.getElementById('importFile').click()">📥 បញ្ចូលទិន្នន័យ (Restore)</button>
+            <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importDataFromJSON(this)">
             <button class="btn btn-print" onclick="window.print()">🖨️ បោះពុម្ពវិក្កយបត្រ / PDF</button>
         </div>
 
@@ -778,6 +781,51 @@
             updateProductDropdowns();
             renderProductDBList();
         }
+    }
+
+    // -------------------------------------- //
+    // បានបន្ថែមមុខងារ BACKUP & RESTORE JSON    //
+    // -------------------------------------- //
+    function exportDataToJSON() {
+        let invoices = localStorage.getItem('dm_invoices');
+        let products = localStorage.getItem('dm_products_v4');
+
+        if(!invoices && !products) return alert("គ្មានទិន្នន័យសម្រាប់ទាញចេញឡើយ!");
+
+        let backupData = {
+            invoices: invoices ? JSON.parse(invoices) : [],
+            products: products ? JSON.parse(products) : []
+        };
+
+        let blob = new Blob([JSON.stringify(backupData, null, 2)], {type: "application/json"});
+        let a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `DM_Invoice_Backup_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function importDataFromJSON(input) {
+        let file = input.files[0];
+        if (!file) return;
+
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                let data = JSON.parse(e.target.result);
+                if (data.invoices || data.products) {
+                    if (data.invoices) localStorage.setItem('dm_invoices', JSON.stringify(data.invoices));
+                    if (data.products) localStorage.setItem('dm_products_v4', JSON.stringify(data.products));
+                    
+                    alert("🔄 បានបញ្ចូលទិន្នន័យជោគជ័យ! វែបសាយនឹងរៀបចំឡើងវិញ...");
+                    location.reload();
+                } else {
+                    alert("ហ្វាយនេះមិនមានទម្រង់ទិន្នន័យត្រឹមត្រូវឡើយ!");
+                }
+            } catch (err) {
+                alert("ការអានហ្វាយមានបញ្ហា: " + err.message);
+            }
+        };
+        reader.readAsText(file);
     }
 
     function addRow() {
